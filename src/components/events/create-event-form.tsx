@@ -26,7 +26,14 @@ const initialForm: EventFormData = {
   location: "",
   date: "",
 };
-
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 function getLocalDateTime() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -67,14 +74,48 @@ export default function CreateEventForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const title = form.title.trim();
+    const description = form.description.trim();
+    const category = form.category.trim();
+    const image = form.image.trim();
+    const location = form.location.trim();
+
+    // Authentication validation
     if (!session) {
       toast.error("Please log in before creating an event.");
       router.push("/login");
       return;
     }
 
-    if (new Date(form.date).getTime() <= Date.now()) {
-      toast.error("Please select a future date and time.");
+    // Required field validation
+    if (!title || !description || !category || !image || !location || !form.date) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    // Title validation
+    if (title.length > 120) {
+      toast.error("Event title cannot exceed 120 characters.");
+      return;
+    }
+
+    // Description validation
+    if (description.length > 2000) {
+      toast.error("Description cannot exceed 2000 characters.");
+      return;
+    }
+
+    // Image URL validation
+    if (!isValidHttpUrl(image)) {
+      toast.error("Please enter a valid image URL starting with http or https.");
+      return;
+    }
+
+    // Date validation
+    const eventDate = new Date(form.date);
+
+    if (Number.isNaN(eventDate.getTime()) || eventDate.getTime() <= Date.now()) {
+      toast.error("Please select a valid future date and time.");
       return;
     }
 
@@ -84,12 +125,12 @@ export default function CreateEventForm() {
       const response = await authenticatedFetch("/api/events", {
         method: "POST",
         body: JSON.stringify({
-          title: form.title.trim(),
-          description: form.description.trim(),
-          category: form.category,
-          image: form.image.trim(),
-          location: form.location.trim(),
-          date: new Date(form.date).toISOString(),
+          title,
+          description,
+          category,
+          image,
+          location,
+          date: eventDate.toISOString(),
         }),
       });
 
@@ -100,12 +141,16 @@ export default function CreateEventForm() {
       }
 
       toast.success("Your event has been created successfully!");
+
       setForm(initialForm);
+
       router.push("/");
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Something went wrong.";
+        error instanceof Error
+          ? error.message
+          : "Something went wrong.";
 
       toast.error(message);
     } finally {

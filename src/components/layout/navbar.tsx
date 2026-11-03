@@ -1,3 +1,4 @@
+
 "use client";
 
 import AuthNavActions from "./auth-nav-actions";
@@ -30,8 +31,6 @@ export default function Navbar() {
   const links = [
     { name: "Home", href: "/" },
     { name: "Upcoming Events", href: "/events" },
-    { name: "Joined Events", href: "/joined-events" },
-    { name: "Manage Events", href: "/manage-events" },
     { name: "About", href: "/about" },
   ];
 
@@ -68,8 +67,9 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Actions */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           <button
+            type="button"
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] transition hover:bg-[var(--secondary)]"
@@ -88,6 +88,7 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
+          type="button"
           onClick={() => setOpen((previous) => !previous)}
           aria-label="Toggle navigation menu"
           aria-expanded={open}
@@ -101,7 +102,6 @@ export default function Navbar() {
       {open && (
         <div className="border-t border-[var(--border)] bg-[var(--background)] p-5 md:hidden">
           <div className="flex flex-col gap-5">
-
             {links.map((link) => (
               <Link
                 key={link.name}
@@ -115,6 +115,7 @@ export default function Navbar() {
 
             {/* Mobile Theme Toggle */}
             <button
+              type="button"
               onClick={toggleTheme}
               className="flex items-center gap-2 text-left font-medium"
             >
@@ -123,15 +124,13 @@ export default function Navbar() {
               ) : (
                 <Moon size={18} />
               )}
-
               Change Theme
             </button>
 
             {/* Mobile Authentication Actions */}
-            <div onClick={closeMenu}>
+            <div className="border-t border-[var(--border)] pt-4">
               <AuthNavActions />
             </div>
-
           </div>
         </div>
       )}

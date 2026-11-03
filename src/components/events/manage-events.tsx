@@ -62,7 +62,14 @@ function toLocalDateTime(date: string) {
   value.setMinutes(value.getMinutes() - value.getTimezoneOffset());
   return value.toISOString().slice(0, 16);
 }
-
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 function getMinimumDateTime() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -163,8 +170,41 @@ export default function ManageEvents() {
 
     if (!editingId) return;
 
-    if (new Date(editForm.date).getTime() <= Date.now()) {
-      toast.error("Please select a future date and time.");
+    const title = editForm.title.trim();
+    const description = editForm.description.trim();
+    const category = editForm.category.trim();
+    const image = editForm.image.trim();
+    const location = editForm.location.trim();
+
+    // Required field validation
+    if (!title || !description || !category || !image || !location || !editForm.date) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    // Title validation
+    if (title.length > 120) {
+      toast.error("Event title cannot exceed 120 characters.");
+      return;
+    }
+
+    // Description validation
+    if (description.length > 2000) {
+      toast.error("Description cannot exceed 2000 characters.");
+      return;
+    }
+
+    // Image URL validation
+    if (!isValidHttpUrl(image)) {
+      toast.error("Please enter a valid image URL starting with http or https.");
+      return;
+    }
+
+    // Date validation
+    const eventDate = new Date(editForm.date);
+
+    if (Number.isNaN(eventDate.getTime()) || eventDate.getTime() <= Date.now()) {
+      toast.error("Please select a valid future date and time.");
       return;
     }
 
@@ -176,12 +216,12 @@ export default function ManageEvents() {
         {
           method: "PATCH",
           body: JSON.stringify({
-            title: editForm.title.trim(),
-            description: editForm.description.trim(),
-            category: editForm.category,
-            image: editForm.image.trim(),
-            location: editForm.location.trim(),
-            date: new Date(editForm.date).toISOString(),
+            title,
+            description,
+            category,
+            image,
+            location,
+            date: eventDate.toISOString(),
           }),
         }
       );
@@ -193,11 +233,14 @@ export default function ManageEvents() {
       }
 
       toast.success("Event updated successfully!");
+
       cancelEditing();
       await fetchMyEvents();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Something went wrong."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
     } finally {
       setIsSaving(false);

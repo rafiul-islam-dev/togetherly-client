@@ -1,20 +1,54 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronDown, User, CalendarPlus, CalendarDays, Users, LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { LogOut, UserCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AuthNavActions() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const [loggingOut, setLoggingOut] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleOutsideClick = (event: PointerEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuOpen]);
+
+  // Close dropdown when session changes
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [session?.user?.id]);
 
   const handleLogout = async () => {
-    setLoggingOut(true);
-
     try {
       const { error } = await authClient.signOut();
 
@@ -23,78 +57,156 @@ export default function AuthNavActions() {
         return;
       }
 
+      setMenuOpen(false);
       toast.success("Logged out successfully.");
       router.push("/");
       router.refresh();
     } catch {
       toast.error("Something went wrong during logout.");
-    } finally {
-      setLoggingOut(false);
     }
   };
 
   if (isPending) {
     return (
-      <div className="h-10 w-20 animate-pulse rounded-xl bg-muted" />
+      <div className="h-10 w-24 animate-pulse rounded-full bg-muted" />
     );
   }
 
-  if (!session?.user) {
+  // User is not logged in
+  if (!session) {
     return (
-      <div className="flex items-center gap-3">
-        <Link
-          href="/login"
-          className="rounded-xl px-4 py-2 text-sm font-semibold transition hover:bg-muted"
-        >
-          Login
-        </Link>
-
-        <Link
-          href="/register"
-          className="rounded-xl bg-[#176B45] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#125638]"
-        >
-          Get Started
-        </Link>
-      </div>
+      <Link
+        href="/login"
+        className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+      >
+        Login
+      </Link>
     );
   }
 
   const user = session.user;
+  const userName = user.name || "User";
+  const userImage = user.image;
+
+  const initials = userName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
   return (
-    <div className="flex items-center gap-3">
-      <Link
-        href="/profile"
-        className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 transition hover:bg-muted"
-      >
-        {user.image ? (
-          <img
-            src={user.image}
-            alt={user.name || "Profile"}
-            className="h-8 w-8 rounded-full object-cover"
-          />
-        ) : (
-          <UserCircle size={25} />
-        )}
-
-        <span className="hidden max-w-28 truncate text-sm font-medium sm:block">
-          {user.name}
-        </span>
-      </Link>
-
+    <div ref={dropdownRef} className="relative">
+      {/* Profile Picture Trigger */}
       <button
         type="button"
-        onClick={handleLogout}
-        disabled={loggingOut}
-        className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-60"
+        onClick={() => setMenuOpen((previous) => !previous)}
+        aria-label="Open profile menu"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        className="group relative flex items-center gap-2 rounded-full border border-border bg-card p-1.5 transition hover:border-primary/50 hover:bg-muted"
       >
-        {loggingOut ? (
-          <Loader2 size={16} className="animate-spin" />
+        {userImage ? (
+          <img
+            src={userImage}
+            alt={userName}
+            className="h-9 w-9 rounded-full object-cover"
+          />
         ) : (
-          <LogOut size={16} />
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            {initials || "U"}
+          </span>
         )}
-        <span className="hidden sm:inline">Logout</span>
+
+        <ChevronDown
+          className={`mr-1 h-4 w-4 transition-transform duration-200 ${
+            menuOpen ? "rotate-180" : ""
+          }`}
+        />
+
+        {/* Display Name Tooltip */}
+        <span className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden whitespace-nowrap rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-md group-hover:block group-focus-visible:block">
+          {userName}
+        </span>
       </button>
+
+      {/* Profile Dropdown */}
+      <div
+        role="menu"
+        aria-label="Profile navigation"
+        className={`absolute right-0 top-full z-50 mt-2 w-60 origin-top-right rounded-xl border border-border bg-card p-2 shadow-xl transition-all duration-200 ${
+          menuOpen
+            ? "visible translate-y-0 opacity-100"
+            : "invisible -translate-y-2 opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* User Information */}
+        <div className="border-b border-border px-3 py-3">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {userName}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {user.email}
+          </p>
+        </div>
+
+        {/* Dropdown Links */}
+        <div className="space-y-1 py-2">
+          <Link
+            href="/profile"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+          >
+            <User className="h-4 w-4 text-muted-foreground" />
+            My Profile
+          </Link>
+
+          <Link
+            href="/create-event"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+          >
+            <CalendarPlus className="h-4 w-4 text-muted-foreground" />
+            Create Event
+          </Link>
+
+          <Link
+            href="/manage-events"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+          >
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            Manage Events
+          </Link>
+
+          <Link
+            href="/joined-events"
+            role="menuitem"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+          >
+            <Users className="h-4 w-4 text-muted-foreground" />
+            Joined Events
+          </Link>
+        </div>
+
+        {/* Logout */}
+        <div className="border-t border-border pt-2">
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

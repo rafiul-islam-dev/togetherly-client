@@ -47,8 +47,47 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (isRegister && !isPasswordValid) {
-      toast.error("Please meet all password requirements.");
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+    const cleanImage = image.trim();
+
+    if (isRegister) {
+      if (!cleanName) {
+        toast.error("Please enter your full name.");
+        return;
+      }
+
+      if (cleanName.length > 100) {
+        toast.error("Name cannot exceed 100 characters.");
+        return;
+      }
+
+      if (!cleanEmail) {
+        toast.error("Please enter your email address.");
+        return;
+      }
+
+      if (!isPasswordValid) {
+        toast.error("Please meet all password requirements.");
+        return;
+      }
+
+      if (cleanImage) {
+        try {
+          const imageUrl = new URL(cleanImage);
+
+          if (!["http:", "https:"].includes(imageUrl.protocol)) {
+            throw new Error("Invalid image URL");
+          }
+        } catch {
+          toast.error("Please enter a valid profile picture URL.");
+          return;
+        }
+      }
+    }
+
+    if (!cleanEmail) {
+      toast.error("Please enter your email address.");
       return;
     }
 
@@ -57,10 +96,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
     try {
       if (isRegister) {
         const { error } = await authClient.signUp.email({
-          name: name.trim(),
-          email: email.trim(),
+          name: cleanName,
+          email: cleanEmail,
           password,
-          image: image.trim() || undefined,
+          image: cleanImage || undefined,
         });
 
         if (error) {
@@ -71,7 +110,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         toast.success("Account created successfully!");
       } else {
         const { error } = await authClient.signIn.email({
-          email: email.trim(),
+          email: cleanEmail,
           password,
         });
 
