@@ -4,25 +4,67 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, MapPin, CalendarDays } from "lucide-react";
-import { demoEvents } from "@/lib/events";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+type Event = {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  image: string;
+  location: string;
+  date: string;
+};
 
 export default function EventsSection() {
-  const [upcomingEvents, setUpcomingEvents] = useState<typeof demoEvents>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const now = new Date();
+    const fetchUpcomingEvents = async () => {
+      try {
+        setIsLoaded(false);
+        setError("");
 
-    const filteredEvents = demoEvents
-      .filter((event) => new Date(event.date) > now)
-      .sort(
-        (a, b) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
-      .slice(0, 6);
+        const response = await fetch(
+          `${API_URL}/api/events?page=1&limit=6`,
+          { cache: "no-store" }
+        );
 
-    setUpcomingEvents(filteredEvents);
-    setIsLoaded(true);
+        if (!response.ok) {
+          throw new Error("Unable to load upcoming events.");
+        }
+
+        const result = await response.json();
+
+        const events: Event[] = Array.isArray(result.events)
+          ? result.events
+          : [];
+
+        const now = new Date();
+
+        const filteredEvents = events
+          .filter((event) => new Date(event.date) > now)
+          .sort(
+            (a, b) =>
+              new Date(a.date).getTime() -
+              new Date(b.date).getTime()
+          )
+          .slice(0, 6);
+
+        setUpcomingEvents(filteredEvents);
+      } catch (err) {
+        console.error("Homepage events error:", err);
+        setError("Unable to load events. Please try again later.");
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    fetchUpcomingEvents();
   }, []);
 
   return (
@@ -61,12 +103,16 @@ export default function EventsSection() {
               />
             ))}
           </div>
+        ) : error ? (
+          <p className="py-12 text-center text-red-500">
+            {error}
+          </p>
         ) : (
           <>
             <div className="mt-12 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
               {upcomingEvents.map((event) => (
                 <article
-                  key={event.id}
+                  key={event._id}
                   className="group overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] transition duration-300 hover:-translate-y-2 hover:shadow-xl"
                 >
                   <div className="relative h-56 overflow-hidden">
@@ -107,7 +153,7 @@ export default function EventsSection() {
                     </div>
 
                     <Link
-                      href={`/events/${event.id}`}
+                      href={`/events/${event._id}`}
                       className="mt-auto flex items-center justify-center gap-2 rounded-full bg-[#176B45] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#105637]"
                     >
                       View Event <ArrowRight size={16} />
