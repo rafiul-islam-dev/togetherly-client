@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 import { authenticatedFetch } from "@/lib/api";
+import { EventCardSkeleton } from "@/components/shared/loading-skeleton";
 
 type EventItem = {
   _id: string;
@@ -62,6 +63,7 @@ function toLocalDateTime(date: string) {
   value.setMinutes(value.getMinutes() - value.getTimezoneOffset());
   return value.toISOString().slice(0, 16);
 }
+
 function isValidHttpUrl(value: string) {
   try {
     const url = new URL(value);
@@ -70,6 +72,7 @@ function isValidHttpUrl(value: string) {
     return false;
   }
 }
+
 function getMinimumDateTime() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -106,6 +109,7 @@ export default function ManageEvents() {
       }
 
       const data: EventItem[] = result.events ?? [];
+
       setEvents(
         data.sort(
           (a, b) =>
@@ -118,6 +122,7 @@ export default function ManageEvents() {
           ? err.message
           : "Something went wrong while loading your events."
       );
+
       setEvents([]);
     } finally {
       setIsLoading(false);
@@ -138,6 +143,7 @@ export default function ManageEvents() {
 
   const startEditing = (event: EventItem) => {
     setEditingId(event._id);
+
     setEditForm({
       title: event.title,
       description: event.description,
@@ -159,6 +165,7 @@ export default function ManageEvents() {
     >
   ) => {
     const { name, value } = event.target;
+
     setEditForm((previous) => ({
       ...previous,
       [name]: value,
@@ -176,34 +183,41 @@ export default function ManageEvents() {
     const image = editForm.image.trim();
     const location = editForm.location.trim();
 
-    // Required field validation
-    if (!title || !description || !category || !image || !location || !editForm.date) {
+    if (
+      !title ||
+      !description ||
+      !category ||
+      !image ||
+      !location ||
+      !editForm.date
+    ) {
       toast.error("Please fill in all required fields.");
       return;
     }
 
-    // Title validation
     if (title.length > 120) {
       toast.error("Event title cannot exceed 120 characters.");
       return;
     }
 
-    // Description validation
     if (description.length > 2000) {
       toast.error("Description cannot exceed 2000 characters.");
       return;
     }
 
-    // Image URL validation
     if (!isValidHttpUrl(image)) {
-      toast.error("Please enter a valid image URL starting with http or https.");
+      toast.error(
+        "Please enter a valid image URL starting with http or https."
+      );
       return;
     }
 
-    // Date validation
     const eventDate = new Date(editForm.date);
 
-    if (Number.isNaN(eventDate.getTime()) || eventDate.getTime() <= Date.now()) {
+    if (
+      Number.isNaN(eventDate.getTime()) ||
+      eventDate.getTime() <= Date.now()
+    ) {
       toast.error("Please select a valid future date and time.");
       return;
     }
@@ -331,6 +345,7 @@ export default function ManageEvents() {
           <h2 className="text-xl font-bold text-foreground">
             Your Created Events
           </h2>
+
           {!isLoading && !error && (
             <p className="mt-1 text-sm text-muted-foreground">
               {events.length} event{events.length === 1 ? "" : "s"} created
@@ -338,17 +353,19 @@ export default function ManageEvents() {
           )}
         </div>
 
+        {/* Reusable Loading Skeleton */}
         {isLoading ? (
-          <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
-            <LoaderCircle size={20} className="animate-spin" />
-            Loading your events...
-          </div>
+          <EventCardSkeleton count={6} />
         ) : error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center">
             <p className="font-semibold text-red-600">
               Could not load your events
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              {error}
+            </p>
+
             <button
               type="button"
               onClick={() => setRetry((value) => value + 1)}
@@ -364,12 +381,15 @@ export default function ManageEvents() {
               size={38}
               className="mx-auto text-muted-foreground"
             />
+
             <h3 className="mt-4 text-lg font-bold text-foreground">
               You haven't created any events
             </h3>
+
             <p className="mt-2 text-sm text-muted-foreground">
               Create your first community event and invite people to join.
             </p>
+
             <Link
               href="/create-event"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#176B45] px-5 py-3 text-sm font-semibold text-white"
@@ -403,6 +423,7 @@ export default function ManageEvents() {
                         <span className="rounded-full bg-[#176B45]/10 px-3 py-1 text-xs font-semibold text-[#176B45]">
                           {item.category}
                         </span>
+
                         <h3 className="mt-3 text-xl font-bold text-foreground">
                           {item.title}
                         </h3>
@@ -468,6 +489,7 @@ export default function ManageEvents() {
                       <h4 className="text-lg font-bold text-foreground">
                         Edit Event
                       </h4>
+
                       <button
                         type="button"
                         onClick={cancelEditing}
@@ -478,11 +500,15 @@ export default function ManageEvents() {
                       </button>
                     </div>
 
-                    <form onSubmit={handleUpdate} className="grid gap-5 sm:grid-cols-2">
+                    <form
+                      onSubmit={handleUpdate}
+                      className="grid gap-5 sm:grid-cols-2"
+                    >
                       <div className="space-y-2">
                         <label htmlFor="edit-title" className="text-sm font-semibold">
                           Event Title
                         </label>
+
                         <input
                           id="edit-title"
                           name="title"
@@ -498,6 +524,7 @@ export default function ManageEvents() {
                         <label htmlFor="edit-category" className="text-sm font-semibold">
                           Category
                         </label>
+
                         <select
                           id="edit-category"
                           name="category"
@@ -518,6 +545,7 @@ export default function ManageEvents() {
                         <label htmlFor="edit-description" className="text-sm font-semibold">
                           Description
                         </label>
+
                         <textarea
                           id="edit-description"
                           name="description"
@@ -534,6 +562,7 @@ export default function ManageEvents() {
                         <label htmlFor="edit-image" className="text-sm font-semibold">
                           Image URL
                         </label>
+
                         <input
                           id="edit-image"
                           name="image"
@@ -549,6 +578,7 @@ export default function ManageEvents() {
                         <label htmlFor="edit-location" className="text-sm font-semibold">
                           Location
                         </label>
+
                         <input
                           id="edit-location"
                           name="location"
@@ -563,6 +593,7 @@ export default function ManageEvents() {
                         <label htmlFor="edit-date" className="text-sm font-semibold">
                           Event Date & Time
                         </label>
+
                         <input
                           id="edit-date"
                           name="date"
@@ -586,6 +617,7 @@ export default function ManageEvents() {
                           ) : (
                             <Save size={17} />
                           )}
+
                           {isSaving ? "Saving..." : "Save Changes"}
                         </button>
 

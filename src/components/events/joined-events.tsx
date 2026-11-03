@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 import { authenticatedFetch } from "@/lib/api";
+import { EventCardSkeleton } from "@/components/shared/loading-skeleton";
 
 type JoinedEvent = {
   _id: string;
@@ -69,7 +70,7 @@ export default function JoinedEvents() {
 
       const joinedEvents = records
         .map((record) => {
-          // The API may return populated join records or event objects.
+          // Supports populated join records or direct event objects.
           return "event" in record ? record.event : record;
         })
         .filter((event): event is JoinedEvent => Boolean(event?._id))
@@ -85,6 +86,7 @@ export default function JoinedEvents() {
           ? err.message
           : "Something went wrong while loading your events."
       );
+
       setEvents([]);
     } finally {
       setIsLoading(false);
@@ -174,6 +176,7 @@ export default function JoinedEvents() {
             <h2 className="text-xl font-bold text-foreground">
               Your Events
             </h2>
+
             {!isLoading && !error && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {events.length} event{events.length === 1 ? "" : "s"} joined
@@ -190,17 +193,19 @@ export default function JoinedEvents() {
           </Link>
         </div>
 
+        {/* Reusable Loading Skeleton */}
         {isLoading ? (
-          <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
-            <LoaderCircle size={20} className="animate-spin" />
-            Loading your joined events...
-          </div>
+          <EventCardSkeleton count={6} />
         ) : error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center">
             <p className="font-semibold text-red-600">
               Could not load your events
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              {error}
+            </p>
+
             <button
               type="button"
               onClick={() => setRetry((value) => value + 1)}
@@ -216,13 +221,16 @@ export default function JoinedEvents() {
               size={38}
               className="mx-auto text-muted-foreground"
             />
+
             <h3 className="mt-4 text-lg font-bold text-foreground">
               You haven't joined any events yet
             </h3>
+
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
               Explore upcoming community activities and join an event
               that interests you.
             </p>
+
             <Link
               href="/events"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#176B45] px-5 py-3 text-sm font-semibold text-white"
@@ -285,7 +293,9 @@ export default function JoinedEvents() {
                           size={16}
                           className="shrink-0 text-[#176B45]"
                         />
-                        <span className="line-clamp-1">{event.location}</span>
+                        <span className="line-clamp-1">
+                          {event.location}
+                        </span>
                       </p>
                     </div>
 

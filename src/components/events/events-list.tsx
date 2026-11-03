@@ -11,6 +11,7 @@ import {
   ArrowRight,
   PlusCircle,
 } from "lucide-react";
+import { EventCardSkeleton } from "@/components/shared/loading-skeleton";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -116,6 +117,7 @@ export default function EventsList() {
             ? err.message
             : "Something went wrong while loading events."
         );
+
         setEvents([]);
       } finally {
         if (!controller.signal.aborted) {
@@ -185,6 +187,7 @@ export default function EventsList() {
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
+
             <input
               type="search"
               value={searchInput}
@@ -199,6 +202,7 @@ export default function EventsList() {
               size={16}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
+
             <select
               value={categoryInput}
               onChange={(event) => setCategoryInput(event.target.value)}
@@ -233,6 +237,7 @@ export default function EventsList() {
             <h2 className="text-xl font-bold text-foreground">
               Explore Community Events
             </h2>
+
             <p className="mt-1 text-sm text-muted-foreground">
               {isLoading
                 ? "Finding events..."
@@ -241,30 +246,21 @@ export default function EventsList() {
           </div>
         </div>
 
+        {/* Loading Skeleton */}
         {isLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="overflow-hidden rounded-2xl border border-border"
-              >
-                <div className="aspect-[16/10] animate-pulse bg-muted" />
-                <div className="space-y-3 p-5">
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-3/4 animate-pulse rounded bg-muted" />
-                  <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <EventCardSkeleton count={6} />
         ) : error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center">
             <p className="font-semibold text-red-600">
               Could not load events
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              {error}
+            </p>
+
             <button
+              type="button"
               onClick={() => setRetry((current) => current + 1)}
               className="mt-4 rounded-lg bg-[#176B45] px-5 py-2.5 text-sm font-semibold text-white"
             >
@@ -277,13 +273,17 @@ export default function EventsList() {
               size={36}
               className="mx-auto text-muted-foreground"
             />
+
             <h3 className="mt-4 text-lg font-bold text-foreground">
               No events found
             </h3>
+
             <p className="mt-2 text-sm text-muted-foreground">
               Try another search or category, or create a new community event.
             </p>
+
             <button
+              type="button"
               onClick={handleReset}
               className="mt-5 rounded-xl bg-[#176B45] px-5 py-3 text-sm font-semibold text-white"
             >
@@ -307,6 +307,7 @@ export default function EventsList() {
                         event.currentTarget.style.display = "none";
                       }}
                     />
+
                     <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#176B45]">
                       {event.category}
                     </span>
@@ -335,7 +336,9 @@ export default function EventsList() {
                           size={16}
                           className="shrink-0 text-[#176B45]"
                         />
-                        <span className="line-clamp-1">{event.location}</span>
+                        <span className="line-clamp-1">
+                          {event.location}
+                        </span>
                       </p>
                     </div>
 
