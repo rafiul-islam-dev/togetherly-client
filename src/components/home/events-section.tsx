@@ -40,9 +40,11 @@ export default function EventsSection() {
 
         const result = await response.json();
 
-        const events: Event[] = Array.isArray(result.events)
-          ? result.events
-          : [];
+        const events: Event[] = Array.isArray(result.data)
+          ? result.data
+          : Array.isArray(result.events)
+            ? result.events
+            : [];
 
         const now = new Date();
 

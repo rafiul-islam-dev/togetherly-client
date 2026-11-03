@@ -4,7 +4,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, User, CalendarPlus, CalendarDays, Users, LogOut } from "lucide-react";
+import {
+  ChevronDown,
+  User,
+  CalendarPlus,
+  CalendarDays,
+  Users,
+  LogOut,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 
@@ -97,7 +104,7 @@ export default function AuthNavActions() {
     .toUpperCase();
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative z-[100]">
       {/* Profile Picture Trigger */}
       <button
         type="button"
@@ -126,7 +133,7 @@ export default function AuthNavActions() {
         />
 
         {/* Display Name Tooltip */}
-        <span className="pointer-events-none absolute right-0 top-full z-50 mt-2 hidden whitespace-nowrap rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-md group-hover:block group-focus-visible:block">
+        <span className="pointer-events-none absolute right-0 top-full z-[110] mt-2 hidden whitespace-nowrap rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white shadow-md group-hover:block group-focus-visible:block">
           {userName}
         </span>
       </button>
@@ -135,18 +142,30 @@ export default function AuthNavActions() {
       <div
         role="menu"
         aria-label="Profile navigation"
-        className={`absolute right-0 top-full z-50 mt-2 w-60 origin-top-right rounded-xl border border-border bg-card p-2 shadow-xl transition-all duration-200 ${
-          menuOpen
-            ? "visible translate-y-0 opacity-100"
-            : "invisible -translate-y-2 opacity-0 pointer-events-none"
-        }`}
+        className={`
+          absolute right-0 top-full z-[120] mt-2 w-60
+          origin-top-right rounded-xl
+          border border-gray-200 dark:border-gray-700
+          bg-white dark:bg-gray-900
+          p-2
+          text-gray-900 dark:text-gray-100
+          shadow-2xl shadow-black/20
+          ring-1 ring-black/5 dark:ring-white/10
+          transition-all duration-200
+          ${
+            menuOpen
+              ? "visible translate-y-0 opacity-100"
+              : "invisible -translate-y-2 opacity-0 pointer-events-none"
+          }
+        `}
       >
         {/* User Information */}
-        <div className="border-b border-border px-3 py-3">
-          <p className="truncate text-sm font-semibold text-foreground">
+        <div className="border-b border-gray-200 px-3 py-3 dark:border-gray-700">
+          <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
             {userName}
           </p>
-          <p className="truncate text-xs text-muted-foreground">
+
+          <p className="truncate text-xs text-gray-500 dark:text-gray-400">
             {user.email}
           </p>
         </div>
@@ -157,9 +176,9 @@ export default function AuthNavActions() {
             href="/profile"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
           >
-            <User className="h-4 w-4 text-muted-foreground" />
+            <User className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
             My Profile
           </Link>
 
@@ -167,9 +186,9 @@ export default function AuthNavActions() {
             href="/create-event"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
           >
-            <CalendarPlus className="h-4 w-4 text-muted-foreground" />
+            <CalendarPlus className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
             Create Event
           </Link>
 
@@ -177,9 +196,9 @@ export default function AuthNavActions() {
             href="/manage-events"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
           >
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CalendarDays className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
             Manage Events
           </Link>
 
@@ -187,22 +206,22 @@ export default function AuthNavActions() {
             href="/joined-events"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition hover:bg-muted"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-950 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-white"
           >
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
             Joined Events
           </Link>
         </div>
 
         {/* Logout */}
-        <div className="border-t border-border pt-2">
+        <div className="border-t border-gray-200 pt-2 dark:border-gray-700">
           <button
             type="button"
             role="menuitem"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-500/10"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 shrink-0" />
             Logout
           </button>
         </div>

@@ -70,7 +70,6 @@ export default function JoinedEvents() {
 
       const joinedEvents = records
         .map((record) => {
-          // Supports populated join records or direct event objects.
           return "event" in record ? record.event : record;
         })
         .filter((event): event is JoinedEvent => Boolean(event?._id))
@@ -93,18 +92,21 @@ export default function JoinedEvents() {
     }
   }, []);
 
+  // Authentication protection
   useEffect(() => {
     if (!isPending && !session) {
       router.replace("/login");
     }
   }, [isPending, session, router]);
 
+  // Fetch joined events
   useEffect(() => {
     if (session) {
       fetchJoinedEvents();
     }
   }, [session, fetchJoinedEvents, retry]);
 
+  // Leave event
   const handleLeave = async (eventId: string) => {
     const confirmed = window.confirm(
       "Are you sure you want to leave this event?"
@@ -152,6 +154,8 @@ export default function JoinedEvents() {
 
   return (
     <main className="min-h-screen bg-background">
+
+      {/* Page Header */}
       <section className="border-b border-border bg-[#176B45]/5">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#176B45]/10 px-3 py-1.5 text-sm font-semibold text-[#176B45]">
@@ -170,7 +174,10 @@ export default function JoinedEvents() {
         </div>
       </section>
 
+      {/* Events Section */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+
+        {/* Section Heading */}
         <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-foreground">
@@ -193,10 +200,13 @@ export default function JoinedEvents() {
           </Link>
         </div>
 
-        {/* Reusable Loading Skeleton */}
+        {/* Loading */}
         {isLoading ? (
           <EventCardSkeleton count={6} />
+
         ) : error ? (
+
+          /* Error */
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center">
             <p className="font-semibold text-red-600">
               Could not load your events
@@ -215,7 +225,10 @@ export default function JoinedEvents() {
               Try Again
             </button>
           </div>
+
         ) : events.length === 0 ? (
+
+          /* Empty State */
           <div className="rounded-2xl border border-dashed border-border px-5 py-16 text-center">
             <Users
               size={38}
@@ -239,17 +252,24 @@ export default function JoinedEvents() {
               <ArrowRight size={16} />
             </Link>
           </div>
+
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+          /* Joined Event Cards */
+          <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
             {events.map((event) => {
-              const isPast = new Date(event.date).getTime() <= Date.now();
+              const isPast =
+                new Date(event.date).getTime() <= Date.now();
 
               return (
                 <article
                   key={event._id}
-                  className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-lg"
                 >
-                  <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+
+                  {/* Event Image */}
+                  <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-muted">
                     <img
                       src={event.image}
                       alt={event.title}
@@ -270,62 +290,81 @@ export default function JoinedEvents() {
                     )}
                   </div>
 
-                  <div className="p-5">
-                    <h3 className="line-clamp-1 text-lg font-bold text-foreground">
+                  {/* Card Content */}
+                  <div className="flex flex-1 flex-col p-5">
+
+                    {/* Title */}
+                    <h3 className="min-h-7 line-clamp-1 text-lg font-bold text-foreground">
                       {event.title}
                     </h3>
 
-                    <p className="mt-2 line-clamp-2 text-sm leading-5 text-muted-foreground">
+                    {/* Description */}
+                    <p className="mt-2 min-h-10 line-clamp-2 text-sm leading-5 text-muted-foreground">
                       {event.description}
                     </p>
 
+                    {/* Event Information */}
                     <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                      <p className="flex items-center gap-2">
+
+                      <p className="flex min-h-5 items-center gap-2">
                         <CalendarDays
                           size={16}
                           className="shrink-0 text-[#176B45]"
                         />
-                        {formatDate(event.date)}
+
+                        <span className="line-clamp-1">
+                          {formatDate(event.date)}
+                        </span>
                       </p>
 
-                      <p className="flex items-center gap-2">
+                      <p className="flex min-h-5 items-center gap-2">
                         <MapPin
                           size={16}
                           className="shrink-0 text-[#176B45]"
                         />
+
                         <span className="line-clamp-1">
                           {event.location}
                         </span>
                       </p>
+
                     </div>
 
-                    <div className="mt-5 grid grid-cols-2 gap-3">
+                    {/* Action Buttons - Always at Bottom */}
+                    <div className="mt-auto grid grid-cols-2 gap-3 pt-5">
+
                       <Link
                         href={`/events/${event._id}`}
-                        className="flex items-center justify-center gap-1 rounded-xl border border-[#176B45]/30 px-3 py-3 text-xs font-semibold text-[#176B45] transition hover:bg-[#176B45] hover:text-white"
+                        className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-[#176B45]/30 px-2 py-3 text-center text-xs font-semibold text-[#176B45] transition hover:bg-[#176B45] hover:text-white"
                       >
                         View Details
-                        <ArrowRight size={14} />
+                        <ArrowRight size={14} className="shrink-0" />
                       </Link>
 
                       <button
                         type="button"
                         onClick={() => handleLeave(event._id)}
                         disabled={leavingId === event._id}
-                        className="flex items-center justify-center gap-1 rounded-xl border border-red-500/30 px-3 py-3 text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-red-500/30 px-2 py-3 text-center text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {leavingId === event._id ? (
-                          <LoaderCircle size={14} className="animate-spin" />
+                          <LoaderCircle
+                            size={14}
+                            className="shrink-0 animate-spin"
+                          />
                         ) : (
-                          <LogOut size={14} />
+                          <LogOut size={14} className="shrink-0" />
                         )}
+
                         Leave Event
                       </button>
+
                     </div>
                   </div>
                 </article>
               );
             })}
+
           </div>
         )}
       </section>
