@@ -31,6 +31,11 @@ type EventItem = {
   date: string;
 };
 
+type JoinItem = {
+  event?: string | { _id?: string };
+  eventId?: string;
+};
+
 export default function EventDetails() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -42,9 +47,11 @@ export default function EventDetails() {
   const [event, setEvent] = useState<EventItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
+  const [isCheckingJoinStatus, setIsCheckingJoinStatus] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState("");
 
+  // Fetch event details
   useEffect(() => {
     if (!eventId) return;
 
@@ -95,6 +102,69 @@ export default function EventDetails() {
     return () => controller.abort();
   }, [eventId]);
 
+  // Check whether the logged-in user has already joined this event
+  useEffect(() => {
+    if (isSessionPending || !eventId) return;
+
+    if (!session) {
+      setHasJoined(false);
+      setIsCheckingJoinStatus(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const checkJoinStatus = async () => {
+      setIsCheckingJoinStatus(true);
+
+      try {
+        const response = await authenticatedFetch("/api/joins", {
+          method: "GET",
+          signal: controller.signal,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Unable to check join status.");
+        }
+
+        const joins: JoinItem[] =
+          result.joins ?? result.events ?? result.data ?? [];
+
+        const alreadyJoined = Array.isArray(joins)
+          ? joins.some((join) => {
+              const joinedEvent =
+                typeof join.event === "object"
+                  ? join.event?._id
+                  : join.event;
+
+              const joinedEventId = joinedEvent ?? join.eventId;
+
+              return String(joinedEventId) === String(eventId);
+            })
+          : false;
+
+        if (!controller.signal.aborted) {
+          setHasJoined(alreadyJoined);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+
+        console.error("Join status error:", err);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsCheckingJoinStatus(false);
+        }
+      }
+    };
+
+    checkJoinStatus();
+
+    return () => controller.abort();
+  }, [eventId, session?.user?.email, isSessionPending]);
+
+  // Join event
   const handleJoin = async () => {
     if (!session) {
       toast.error("Please log in to join this event.");
@@ -102,7 +172,7 @@ export default function EventDetails() {
       return;
     }
 
-    if (!event) return;
+    if (!event || hasJoined) return;
 
     setIsJoining(true);
 
@@ -150,9 +220,11 @@ export default function EventDetails() {
         <h1 className="text-2xl font-bold text-foreground">
           Event not found
         </h1>
+
         <p className="mt-2 text-sm text-muted-foreground">
           {error || "This event may have been removed or is unavailable."}
         </p>
+
         <Link
           href="/events"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#176B45] px-5 py-3 text-sm font-semibold text-white"
@@ -188,6 +260,7 @@ export default function EventDetails() {
                 imageEvent.currentTarget.style.display = "none";
               }}
             />
+
             <span className="absolute left-5 top-5 rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-[#176B45]">
               {event.category}
             </span>
@@ -204,10 +277,12 @@ export default function EventDetails() {
                   size={21}
                   className="mt-0.5 shrink-0 text-[#176B45]"
                 />
+
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">
                     Date & Time
                   </p>
+
                   <p className="mt-1 text-sm font-semibold text-foreground">
                     {eventDate.toLocaleString("en-US", {
                       dateStyle: "long",
@@ -222,10 +297,12 @@ export default function EventDetails() {
                   size={21}
                   className="mt-0.5 shrink-0 text-[#176B45]"
                 />
+
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">
                     Location
                   </p>
+
                   <p className="mt-1 text-sm font-semibold text-foreground">
                     {event.location}
                   </p>
@@ -237,13 +314,19 @@ export default function EventDetails() {
               <h2 className="text-xl font-bold text-foreground">
                 About This Event
               </h2>
+
               <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground sm:text-base">
                 {event.description}
               </p>
             </section>
 
             <div className="mt-9 border-t border-border pt-7">
-              {hasJoined ? (
+              {isCheckingJoinStatus ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-muted px-5 py-4 text-sm font-semibold text-muted-foreground">
+                  <LoaderCircle size={18} className="animate-spin" />
+                  Checking participation...
+                </div>
+              ) : hasJoined ? (
                 <div className="flex items-center justify-center gap-2 rounded-xl bg-[#176B45]/10 px-5 py-4 text-sm font-semibold text-[#176B45]">
                   <CheckCircle2 size={19} />
                   You have joined this event
