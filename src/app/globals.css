@@ -2,21 +2,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8faf7;
+  color-scheme: light;
+
+  --background: #fbfcf8;
   --foreground: #17251d;
   --primary: #176b45;
-  --secondary: #e8f2e9;
+  --secondary: #edf3eb;
   --accent: #c8ef76;
-  --muted: #64746a;
+  --muted: #68766d;
   --card: #ffffff;
   --border: #e4eae4;
 }
 
 .dark {
+  color-scheme: dark;
+
   --background: #101a15;
   --foreground: #edf5ef;
   --primary: #65bd8b;
-  --secondary: #20342a;
+  --secondary: #1b2b21;
   --accent: #c8ef76;
   --muted: #a0b2a5;
   --card: #19251e;
@@ -42,6 +46,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   margin: 0;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 button,
@@ -56,4 +63,9 @@ button {
 ::selection {
   background: #c8ef76;
   color: #17251d;
+}
+
+img {
+  display: block;
+  max-width: 100%;
 }

@@ -1,6 +1,12 @@
 
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+
+import { ThemeProvider } from "@/components/providers/theme-provider";
+
+import Navbar from "@/components/layout/navbar";
+import Footer from "@/components/layout/footer";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,10 +24,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        {children}
-        <Toaster position="top-right" richColors />
+        <ThemeProvider>
+          <Navbar />
+
+          {children}
+
+          <Footer />
+
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+          />
+        </ThemeProvider>
       </body>
     </html>
   );
