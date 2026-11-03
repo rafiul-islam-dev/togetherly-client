@@ -1,6 +1,6 @@
-
 "use client";
 
+import AuthNavActions from "./auth-nav-actions";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
@@ -10,7 +10,6 @@ import {
   X,
   Sun,
   Moon,
-  ArrowUpRight,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -26,6 +25,8 @@ export default function Navbar() {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const closeMenu = () => setOpen(false);
+
   const links = [
     { name: "Home", href: "/" },
     { name: "Upcoming Events", href: "/events" },
@@ -35,10 +36,12 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+
+        {/* Logo */}
         <Link
           href="/"
           className="flex items-center gap-2"
-          onClick={() => setOpen(false)}
+          onClick={closeMenu}
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#176B45] text-white">
             <HeartHandshake size={24} />
@@ -49,6 +52,7 @@ export default function Navbar() {
           </span>
         </Link>
 
+        {/* Desktop Navigation Links */}
         <div className="hidden items-center gap-8 md:flex">
           {links.map((link) => (
             <Link
@@ -61,6 +65,7 @@ export default function Navbar() {
           ))}
         </div>
 
+        {/* Desktop Actions */}
         <div className="hidden items-center gap-3 md:flex">
           <button
             onClick={toggleTheme}
@@ -76,45 +81,37 @@ export default function Navbar() {
             )}
           </button>
 
-          <Link
-            href="/login"
-            className="rounded-full px-5 py-3 text-sm font-semibold transition hover:bg-[var(--secondary)]"
-          >
-            Log in
-          </Link>
-
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 rounded-full bg-[#176B45] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#105637]"
-          >
-            Get Started <ArrowUpRight size={16} />
-          </Link>
+          <AuthNavActions />
         </div>
 
+        {/* Mobile Menu Button */}
         <button
-          onClick={() => setOpen(!open)}
+          onClick={() => setOpen((previous) => !previous)}
           aria-label="Toggle navigation menu"
           aria-expanded={open}
           className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] md:hidden"
         >
-          {open ? <X /> : <Menu />}
+          {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       </nav>
 
+      {/* Mobile Navigation */}
       {open && (
         <div className="border-t border-[var(--border)] bg-[var(--background)] p-5 md:hidden">
           <div className="flex flex-col gap-5">
+
             {links.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                onClick={() => setOpen(false)}
-                className="font-medium"
+                onClick={closeMenu}
+                className="font-medium text-[var(--foreground)] transition hover:text-[#176B45]"
               >
                 {link.name}
               </Link>
             ))}
 
+            {/* Mobile Theme Toggle */}
             <button
               onClick={toggleTheme}
               className="flex items-center gap-2 text-left font-medium"
@@ -124,24 +121,15 @@ export default function Navbar() {
               ) : (
                 <Moon size={18} />
               )}
+
               Change Theme
             </button>
 
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="rounded-full bg-[#176B45] px-5 py-3 text-center font-semibold text-white"
-            >
-              Log in
-            </Link>
+            {/* Mobile Authentication Actions */}
+            <div onClick={closeMenu}>
+              <AuthNavActions />
+            </div>
 
-            <Link
-              href="/register"
-              onClick={() => setOpen(false)}
-              className="rounded-full border border-[var(--border)] px-5 py-3 text-center font-semibold"
-            >
-              Get Started
-            </Link>
           </div>
         </div>
       )}
