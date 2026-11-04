@@ -1,6 +1,6 @@
 
 import Link from "next/link";
-import { HeartHandshake, ArrowUpRight } from "lucide-react";
+import { HandHeart, ArrowUpRight } from "lucide-react";
 
 function InstagramIcon() {
   return (
@@ -54,7 +54,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="inline-flex items-center gap-2">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#176B45] text-white">
-                <HeartHandshake size={24} />
+                <HandHeart size={24} />
               </span>
 
               <span className="text-2xl font-extrabold">
