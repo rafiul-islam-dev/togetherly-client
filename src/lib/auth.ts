@@ -5,7 +5,7 @@ import { jwt } from "better-auth/plugins";
 import { createAuthMiddleware, APIError } from "better-auth/api";
 
 const mongoClient = new MongoClient(process.env.MONGODB_URI!);
-const mongoDatabase = mongoClient.db();
+const mongoDatabase = mongoClient.db("togetherly");
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,

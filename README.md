@@ -17,11 +17,11 @@ The live Vercel URL will be added after deployment.
 - **Join Events:** Participate in events and contribute to community development.
 - **Manage Events:** Edit and delete events created by your account.
 - **Joined Events:** View your joined events and manage your participation.
-- **Secure Authentication:** Register and log in using Better Auth with email/password or Google OAuth.
-- **User Profiles:** View and update your profile information and profile picture.
+- **Secure Authentication:** Register and log in using Better Auth.
+- **User Profiles:** View and update profile information and profile picture.
 - **Search & Filter:** Find events using search and category filters.
 - **Responsive Design:** Optimized for mobile, tablet, and desktop devices.
-- **Dark & Light Mode:** Switch between themes for a comfortable experience.
+- **Dark & Light Mode:** Switch between themes.
 
 ## Technology Stack
 
@@ -39,30 +39,31 @@ The live Vercel URL will be added after deployment.
 - MongoDB
 - Mongoose
 - JWT Authentication
-- Better Auth
 
 ## Project Structure
 
+The frontend and backend are maintained in separate project directories.
+
 ```text
-togetherly/
-├── client/
+assignment-8/
+├── togetherly-client/
+│   ├── public/
 │   ├── src/
 │   │   ├── app/
 │   │   ├── components/
 │   │   └── lib/
-│   ├── public/
-│   └── package.json
+│   ├── package.json
+│   └── README.md
 │
-├── server/
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── models/
-│   │   └── routes/
-│   └── package.json
-│
-└── README.md
+└── tohetherly-server/
+    ├── src/
+    │   ├── config/
+    │   ├── controllers/
+    │   ├── middleware/
+    │   ├── models/
+    │   └── routes/
+    ├── package.json
+    └── .env
 ```
 
 ## Run Locally
@@ -76,31 +77,25 @@ Make sure you have installed:
 - MongoDB Atlas account or a local MongoDB instance
 - Git
 
-### 1. Clone the Repository
+### 1. Setup the Backend
+
+Open a terminal:
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
-cd togetherly
-```
-
-Replace `YOUR_GITHUB_REPOSITORY_URL` with your actual GitHub repository URL.
-
-### 2. Setup the Backend
-
-```bash
-cd server
+cd tohetherly-server
 npm install
 ```
 
-Create a `.env` file inside the `server` directory:
+Create a `.env` file inside the backend directory and configure:
 
 ```env
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
-BETTER_AUTH_URL=http://localhost:3000
 ```
 
-### 3. Start the Backend
+Add any other environment variables required by your backend configuration.
+
+### 2. Start the Backend
 
 ```bash
 npm run dev
@@ -110,16 +105,16 @@ The backend API will run at:
 
 `http://localhost:5000`
 
-### 4. Setup the Frontend
+### 3. Setup the Frontend
 
 Open another terminal:
 
 ```bash
-cd togetherly/client
+cd togetherly-client
 npm install
 ```
 
-Create a `.env.local` file inside the `client` directory:
+Create a `.env.local` file inside the frontend directory:
 
 ```env
 BETTER_AUTH_SECRET=your_secret_key
@@ -132,9 +127,9 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-Generate a secure authentication secret and configure your Google OAuth credentials if you want to enable Google login.
+Configure Google OAuth credentials if Google login is enabled.
 
-### 5. Start the Frontend
+### 4. Start the Frontend
 
 ```bash
 npm run dev
