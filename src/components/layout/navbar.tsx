@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import {
-  HeartHandshake,
+  HandHeart,
   Menu,
   X,
   Sun,
@@ -42,9 +42,14 @@ export default function Navbar() {
           href="/"
           className="flex items-center gap-2"
           onClick={closeMenu}
+          aria-label="Togetherly Home"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#176B45] text-white">
-            <HeartHandshake size={24} />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#176B45]">
+            <HandHeart
+              size={25}
+              strokeWidth={2.2}
+              className="text-[#C8EF76]"
+            />
           </span>
 
           <span className="text-2xl font-extrabold tracking-tight">
