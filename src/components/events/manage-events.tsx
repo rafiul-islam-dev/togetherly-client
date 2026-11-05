@@ -1,7 +1,13 @@
 
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ChangeEvent,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -91,8 +97,18 @@ export default function ManageEvents() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<EventItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Input styles: explicit colors for light and dark themes
+  const inputClass =
+    "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#176B45] focus:ring-2 focus:ring-[#176B45]/15 dark:border-gray-600 dark:bg-[#23372d] dark:text-white dark:placeholder:text-gray-400";
+
+  const labelClass =
+    "text-sm font-semibold text-gray-800 dark:text-gray-100";
+
+  // Fetch user's events
   const fetchMyEvents = useCallback(async () => {
     setIsLoading(true);
     setError("");
@@ -122,13 +138,13 @@ export default function ManageEvents() {
           ? err.message
           : "Something went wrong while loading your events."
       );
-
       setEvents([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // Authentication check
   useEffect(() => {
     if (!isPending && !session) {
       router.replace("/login");
@@ -141,6 +157,7 @@ export default function ManageEvents() {
     }
   }, [session, fetchMyEvents, retry]);
 
+  // Open Edit Modal
   const startEditing = (event: EventItem) => {
     setEditingId(event._id);
 
@@ -154,13 +171,51 @@ export default function ManageEvents() {
     });
   };
 
+  // Close Edit Modal
   const cancelEditing = () => {
+    if (isSaving) return;
+
     setEditingId(null);
     setEditForm(emptyForm);
   };
 
+  // Open Delete Modal
+  const openDeleteModal = (event: EventItem) => {
+    setDeleteTarget(event);
+  };
+
+  // Close Delete Modal
+  const closeDeleteModal = () => {
+    if (deletingId) return;
+
+    setDeleteTarget(null);
+  };
+
+  // Escape key and background scroll handling
+  useEffect(() => {
+    if (!editingId && !deleteTarget) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (isSaving || deletingId) return;
+
+      setEditingId(null);
+      setEditForm(emptyForm);
+      setDeleteTarget(null);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [editingId, deleteTarget, isSaving, deletingId]);
+
+  // Handle input changes
   const handleEditChange = (
-    event: React.ChangeEvent<
+    event: ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
@@ -172,6 +227,7 @@ export default function ManageEvents() {
     }));
   };
 
+  // Update Event
   const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -248,7 +304,9 @@ export default function ManageEvents() {
 
       toast.success("Event updated successfully!");
 
-      cancelEditing();
+      setEditingId(null);
+      setEditForm(emptyForm);
+
       await fetchMyEvents();
     } catch (err) {
       toast.error(
@@ -261,19 +319,19 @@ export default function ManageEvents() {
     }
   };
 
-  const handleDelete = async (eventId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this event? This action cannot be undone."
-    );
+  // Confirm and Delete Event
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
 
-    if (!confirmed) return;
-
+    const eventId = deleteTarget._id;
     setDeletingId(eventId);
 
     try {
       const response = await authenticatedFetch(
         `/api/events/${eventId}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+        }
       );
 
       const result = await response.json();
@@ -286,22 +344,18 @@ export default function ManageEvents() {
         previous.filter((item) => item._id !== eventId)
       );
 
-      if (editingId === eventId) {
-        cancelEditing();
-      }
-
+      setDeleteTarget(null);
       toast.success("Event deleted successfully.");
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Something went wrong."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
     } finally {
       setDeletingId(null);
     }
   };
-
-  const inputClass =
-    "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-[#176B45] focus:ring-2 focus:ring-[#176B45]/15";
 
   if (isPending || !session) {
     return (
@@ -315,6 +369,7 @@ export default function ManageEvents() {
 
   return (
     <main className="min-h-screen bg-background">
+      {/* Page Header */}
       <section className="border-b border-border bg-[#176B45]/5">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#176B45]/10 px-3 py-1.5 text-sm font-semibold text-[#176B45]">
@@ -340,6 +395,7 @@ export default function ManageEvents() {
         </div>
       </section>
 
+      {/* Events List */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-7">
           <h2 className="text-xl font-bold text-foreground">
@@ -353,7 +409,6 @@ export default function ManageEvents() {
           )}
         </div>
 
-        {/* Reusable Loading Skeleton */}
         {isLoading ? (
           <EventCardSkeleton count={6} />
         ) : error ? (
@@ -441,15 +496,10 @@ export default function ManageEvents() {
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(item._id)}
-                          disabled={deletingId === item._id}
-                          className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
+                          onClick={() => openDeleteModal(item)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-500 hover:text-white"
                         >
-                          {deletingId === item._id ? (
-                            <LoaderCircle size={15} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={15} />
-                          )}
+                          <Trash2 size={15} />
                           Delete
                         </button>
                       </div>
@@ -482,162 +532,299 @@ export default function ManageEvents() {
                     </Link>
                   </div>
                 </div>
-
-                {editingId === item._id && (
-                  <div className="border-t border-border bg-muted/20 p-5 sm:p-7">
-                    <div className="mb-5 flex items-center justify-between gap-3">
-                      <h4 className="text-lg font-bold text-foreground">
-                        Edit Event
-                      </h4>
-
-                      <button
-                        type="button"
-                        onClick={cancelEditing}
-                        className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                        aria-label="Close edit form"
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
-
-                    <form
-                      onSubmit={handleUpdate}
-                      className="grid gap-5 sm:grid-cols-2"
-                    >
-                      <div className="space-y-2">
-                        <label htmlFor="edit-title" className="text-sm font-semibold">
-                          Event Title
-                        </label>
-
-                        <input
-                          id="edit-title"
-                          name="title"
-                          required
-                          maxLength={120}
-                          value={editForm.title}
-                          onChange={handleEditChange}
-                          className={inputClass}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="edit-category" className="text-sm font-semibold">
-                          Category
-                        </label>
-
-                        <select
-                          id="edit-category"
-                          name="category"
-                          required
-                          value={editForm.category}
-                          onChange={handleEditChange}
-                          className={inputClass}
-                        >
-                          {categories.map((category) => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="space-y-2 sm:col-span-2">
-                        <label htmlFor="edit-description" className="text-sm font-semibold">
-                          Description
-                        </label>
-
-                        <textarea
-                          id="edit-description"
-                          name="description"
-                          required
-                          maxLength={2000}
-                          rows={4}
-                          value={editForm.description}
-                          onChange={handleEditChange}
-                          className={`${inputClass} resize-y`}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="edit-image" className="text-sm font-semibold">
-                          Image URL
-                        </label>
-
-                        <input
-                          id="edit-image"
-                          name="image"
-                          type="url"
-                          required
-                          value={editForm.image}
-                          onChange={handleEditChange}
-                          className={inputClass}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="edit-location" className="text-sm font-semibold">
-                          Location
-                        </label>
-
-                        <input
-                          id="edit-location"
-                          name="location"
-                          required
-                          value={editForm.location}
-                          onChange={handleEditChange}
-                          className={inputClass}
-                        />
-                      </div>
-
-                      <div className="space-y-2 sm:col-span-2">
-                        <label htmlFor="edit-date" className="text-sm font-semibold">
-                          Event Date & Time
-                        </label>
-
-                        <input
-                          id="edit-date"
-                          name="date"
-                          type="datetime-local"
-                          required
-                          min={getMinimumDateTime()}
-                          value={editForm.date}
-                          onChange={handleEditChange}
-                          className={inputClass}
-                        />
-                      </div>
-
-                      <div className="flex flex-wrap gap-3 sm:col-span-2">
-                        <button
-                          type="submit"
-                          disabled={isSaving}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#176B45] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#125638] disabled:opacity-60"
-                        >
-                          {isSaving ? (
-                            <LoaderCircle size={17} className="animate-spin" />
-                          ) : (
-                            <Save size={17} />
-                          )}
-
-                          {isSaving ? "Saving..." : "Save Changes"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={cancelEditing}
-                          className="inline-flex items-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-semibold transition hover:bg-muted"
-                        >
-                          <X size={17} />
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
               </article>
             ))}
           </div>
         )}
       </section>
+
+      {/* ================================= */}
+      {/* EDIT EVENT MODAL */}
+      {/* ================================= */}
+
+      {editingId && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !isSaving
+            ) {
+              cancelEditing();
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-event-title"
+            className="my-auto w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-[#17251e]"
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5 dark:border-gray-700">
+              <div>
+                <h2
+                  id="edit-event-title"
+                  className="text-xl font-bold text-gray-900 dark:text-white"
+                >
+                  Update Event
+                </h2>
+
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                  Modify the details for your social service initiative
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={cancelEditing}
+                disabled={isSaving}
+                aria-label="Close edit modal"
+                className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Edit Form */}
+            <form onSubmit={handleUpdate}>
+              <div className="max-h-[65vh] space-y-4 overflow-y-auto px-6 py-5">
+                <div className="space-y-2">
+                  <label htmlFor="edit-title" className={labelClass}>
+                    Title
+                  </label>
+
+                  <input
+                    id="edit-title"
+                    name="title"
+                    required
+                    maxLength={120}
+                    value={editForm.title}
+                    onChange={handleEditChange}
+                    placeholder="Enter event title"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="edit-category" className={labelClass}>
+                      Event Type
+                    </label>
+
+                    <select
+                      id="edit-category"
+                      name="category"
+                      required
+                      value={editForm.category}
+                      onChange={handleEditChange}
+                      className={inputClass}
+                    >
+                      {!categories.includes(editForm.category) && (
+                        <option value={editForm.category}>
+                          {editForm.category}
+                        </option>
+                      )}
+
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="edit-date" className={labelClass}>
+                      Event Date
+                    </label>
+
+                    <input
+                      id="edit-date"
+                      name="date"
+                      type="datetime-local"
+                      required
+                      min={getMinimumDateTime()}
+                      value={editForm.date}
+                      onChange={handleEditChange}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="edit-location" className={labelClass}>
+                    Location
+                  </label>
+
+                  <input
+                    id="edit-location"
+                    name="location"
+                    required
+                    value={editForm.location}
+                    onChange={handleEditChange}
+                    placeholder="Enter event location"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="edit-image" className={labelClass}>
+                    Thumbnail Image URL
+                  </label>
+
+                  <input
+                    id="edit-image"
+                    name="image"
+                    type="url"
+                    required
+                    value={editForm.image}
+                    onChange={handleEditChange}
+                    placeholder="https://example.com/image.jpg"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="edit-description" className={labelClass}>
+                    Description
+                  </label>
+
+                  <textarea
+                    id="edit-description"
+                    name="description"
+                    required
+                    maxLength={2000}
+                    rows={4}
+                    value={editForm.description}
+                    onChange={handleEditChange}
+                    placeholder="Describe your event..."
+                    className={`${inputClass} resize-y`}
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-[#1d3027]">
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={isSaving}
+                  className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:bg-[#23372d] dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#176B45] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#125638] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSaving ? (
+                    <LoaderCircle size={17} className="animate-spin" />
+                  ) : (
+                    <Save size={17} />
+                  )}
+
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================================= */}
+      {/* DELETE CONFIRMATION MODAL */}
+      {/* ================================= */}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !deletingId
+            ) {
+              closeDeleteModal();
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-event-title"
+            aria-describedby="delete-event-description"
+            className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-[#17251e]"
+          >
+            <div className="flex items-start gap-4">
+              {/* Delete Icon */}
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                <Trash2 size={23} />
+              </div>
+
+              {/* Confirmation Message */}
+              <div className="min-w-0 flex-1">
+                <h2
+                  id="delete-event-title"
+                  className="text-lg font-bold text-gray-900 dark:text-white"
+                >
+                  Delete Event?
+                </h2>
+
+                <p
+                  id="delete-event-description"
+                  className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300"
+                >
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {deleteTarget.title}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+              </div>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={Boolean(deletingId)}
+                aria-label="Close delete confirmation"
+                className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            {/* Delete Modal Footer */}
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={Boolean(deletingId)}
+                className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-[#23372d] dark:text-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={Boolean(deletingId)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingId ? (
+                  <LoaderCircle size={17} className="animate-spin" />
+                ) : (
+                  <Trash2 size={17} />
+                )}
+
+                {deletingId ? "Deleting..." : "Delete Event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
