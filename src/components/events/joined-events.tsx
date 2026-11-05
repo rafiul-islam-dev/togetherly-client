@@ -12,6 +12,8 @@ import {
   LogOut,
   LoaderCircle,
   RefreshCw,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,6 +49,7 @@ export default function JoinedEvents() {
   const [events, setEvents] = useState<JoinedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [leavingId, setLeavingId] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<JoinedEvent | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
 
@@ -106,13 +109,41 @@ export default function JoinedEvents() {
     }
   }, [session, fetchJoinedEvents, retry]);
 
-  // Leave event
-  const handleLeave = async (eventId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to leave this event?"
-    );
+  // Modal: prevent background scrolling and support Escape key
+  useEffect(() => {
+    if (!selectedEvent) return;
 
-    if (!confirmed) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !leavingId) {
+        setSelectedEvent(null);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [selectedEvent, leavingId]);
+
+  // Open Leave Confirmation Modal
+  const openLeaveModal = (event: JoinedEvent) => {
+    setSelectedEvent(event);
+  };
+
+  // Close Leave Confirmation Modal
+  const closeLeaveModal = () => {
+    if (leavingId) return;
+    setSelectedEvent(null);
+  };
+
+  // Confirm Leave Event
+  const handleLeave = async () => {
+    if (!selectedEvent) return;
+
+    const eventId = selectedEvent._id;
 
     setLeavingId(eventId);
 
@@ -132,7 +163,9 @@ export default function JoinedEvents() {
         previous.filter((event) => event._id !== eventId)
       );
 
-      toast.success("You have left the event.");
+      setSelectedEvent(null);
+
+      toast.success("You have successfully left the event.");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Something went wrong."
@@ -293,12 +326,10 @@ export default function JoinedEvents() {
                   {/* Card Content */}
                   <div className="flex flex-1 flex-col p-5">
 
-                    {/* Title */}
                     <h3 className="min-h-7 line-clamp-1 text-lg font-bold text-foreground">
                       {event.title}
                     </h3>
 
-                    {/* Description */}
                     <p className="mt-2 min-h-10 line-clamp-2 text-sm leading-5 text-muted-foreground">
                       {event.description}
                     </p>
@@ -330,7 +361,7 @@ export default function JoinedEvents() {
 
                     </div>
 
-                    {/* Action Buttons - Always at Bottom */}
+                    {/* Action Buttons */}
                     <div className="mt-auto grid grid-cols-2 gap-3 pt-5">
 
                       <Link
@@ -343,19 +374,10 @@ export default function JoinedEvents() {
 
                       <button
                         type="button"
-                        onClick={() => handleLeave(event._id)}
-                        disabled={leavingId === event._id}
-                        className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-red-500/30 px-2 py-3 text-center text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => openLeaveModal(event)}
+                        className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-red-500/30 px-2 py-3 text-center text-xs font-semibold text-red-600 transition hover:bg-red-500 hover:text-white"
                       >
-                        {leavingId === event._id ? (
-                          <LoaderCircle
-                            size={14}
-                            className="shrink-0 animate-spin"
-                          />
-                        ) : (
-                          <LogOut size={14} className="shrink-0" />
-                        )}
-
+                        <LogOut size={14} className="shrink-0" />
                         Leave Event
                       </button>
 
@@ -368,6 +390,144 @@ export default function JoinedEvents() {
           </div>
         )}
       </section>
+
+      {/* ================================= */}
+      {/* LEAVE EVENT CONFIRMATION MODAL */}
+      {/* ================================= */}
+
+      {selectedEvent && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !leavingId
+            ) {
+              closeLeaveModal();
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="leave-event-title"
+            aria-describedby="leave-event-description"
+            className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-[#17251e]"
+          >
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4">
+
+              <div className="flex items-start gap-4">
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                  <AlertTriangle size={23} />
+                </div>
+
+                <div>
+                  <h2
+                    id="leave-event-title"
+                    className="text-lg font-bold text-gray-900 dark:text-white"
+                  >
+                    Leave Event?
+                  </h2>
+
+                  <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">
+                    Are you sure you want to leave this event?
+                  </p>
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={closeLeaveModal}
+                disabled={Boolean(leavingId)}
+                aria-label="Close modal"
+                className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+              >
+                <X size={19} />
+              </button>
+
+            </div>
+
+            {/* Event Information */}
+            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-[#23372d]">
+
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Event Name
+              </p>
+
+              <h3 className="mt-2 text-base font-bold text-gray-900 dark:text-white">
+                {selectedEvent.title}
+              </h3>
+
+              <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <CalendarDays
+                  size={15}
+                  className="shrink-0 text-[#176B45]"
+                />
+                {formatDate(selectedEvent.date)}
+              </div>
+
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <MapPin
+                  size={15}
+                  className="shrink-0 text-[#176B45]"
+                />
+                <span className="line-clamp-1">
+                  {selectedEvent.location}
+                </span>
+              </div>
+
+            </div>
+
+            {/* Warning */}
+            <p
+              id="leave-event-description"
+              className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-300"
+            >
+              You will no longer be registered as a participant
+              in this event. You can join again later if registration
+              is still available.
+            </p>
+
+            {/* Modal Footer */}
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
+              <button
+                type="button"
+                onClick={closeLeaveModal}
+                disabled={Boolean(leavingId)}
+                className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-[#23372d] dark:text-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLeave}
+                disabled={Boolean(leavingId)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {leavingId ? (
+                  <LoaderCircle
+                    size={17}
+                    className="animate-spin"
+                  />
+                ) : (
+                  <LogOut size={17} />
+                )}
+
+                {leavingId ? "Leaving..." : "Yes, Leave Event"}
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
